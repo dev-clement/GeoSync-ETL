@@ -1,0 +1,74 @@
+= GeoSync-ETL: Industrialized Satellite Imagery Processing Chain
+:author: dev_clement
+:revdate: March 2026
+:toc: macro
+:toc-title: Table of Contents
+:icons: font
+
+[abstract]
+This repository contains a high-performance, containerized prototype for automated satellite data ingestion and spectral analysis.
+
+toc::[]
+
+== 1. Project Overview
+GeoSync-ETL is a Python-based processing chain designed to bridge the gap between high-level geospatial analysis and production-grade software engineering. It automates the lifecycle of Earth Observation (EO) data using modern Python 3.12 standards.
+
+== 2. Domain Concepts & Definitions
+
+To ensure architectural clarity, the following geospatial and engineering concepts are implemented within this processing chain:
+
+=== Bounding Box (BBox)
+* **What is it?** A spatial filter defined by a set of four coordinates: `[min_lon, min_lat, max_lon, max_lat]`.
+* **Why & Context:** It is used in the **Discovery Phase** to limit the STAC API search to a specific geographic region. This prevents the ingestion of unnecessary global metadata, optimizing network overhead.
+
+=== Data Streaming (Virtual File Systems)
+* **What is it?** The ability to read specific byte-ranges of a remote file over HTTP without downloading the entire multi-gigabyte asset.
+* **How it works:** Data is sent via **HTTP Range Requests**. The client requests only the headers and the specific "windows" of pixels needed.
+* **Python 3.12 Implementation:** Utilizing `rasterio` with the `vsis3` or `vsicurl` prefixes. This allows Python to treat a remote URL as a local file pointer, decoding pixels on-the-fly.
+
+=== Red & NIR Bands
+* **What are they?** ** **Red Band:** Visible light (approx. 665nm). Absorbed by chlorophyll in plants.
+** **NIR (Near-Infrared):** Invisible light (approx. 842nm). Highly reflected by the internal structure of healthy leaves.
+* **Why & Context:** They are the "inputs" for the NDVI (Normalized Difference Vegetation Index) formula: `(NIR - Red) / (NIR + Red)`.
+* **Python 3.12 Implementation:** We extract these as `numpy` arrays using `rioxarray`. By casting them to `float32`, we avoid integer overflow during subtraction/division.
+
+=== Tiled Processing (Chunking)
+* **What is it?** A "Divide and Conquer" memory strategy. A 10,000x10,000 pixel image is broken into small "tiles" (e.g., 256x256 pixels).
+* **Why:** It allows the processing of massive satellite scenes on a machine with limited RAM. Each tile is processed independently, and the results are "stitched" back together in the output file.
+
+=== GeoTIFF vs. NetCDF vs. GeoJSON
+* **GeoTIFF:** A binary **Raster** format. It is a standard TIFF image with embedded georeferencing tags. 
+** **CRS (Coordinate Reference System):** Unlike standard images, a GeoTIFF contains an **Affine Transform** (mapping pixel coordinates to GPS coordinates) and a **Projection** (e.g., WGS84 or UTM).
+* **NetCDF (Network Common Data Form):** A hierarchical format used for multidimensional scientific data (often weather or time-series). While GeoTIFF is "flat," NetCDF can store hundreds of variables in one file.
+* **GeoJSON:** A text-based **Vector** format. It defines points, lines, and polygons. **Crucial:** GeoTIFF is for pixels (images); GeoJSON is for geometry (boundaries). They are not interchangeable.
+
+== 3. Technical Features & Proactive Alignment
+
+This project implements:
+
+* **Resource Constraints:** Utilizing **Tiled Processing** to ensure a constant memory footprint.
+* **Asynchronous Orchestration:** Using `asyncio` for metadata discovery.
+* **Type Safety:** Strict Python 3.12 type hinting to ensure a strong level of maintainability.
+
+== 4. Tech Stack
+
+[cols="1,3"]
+|===
+| Category | Tool / Library
+
+| **Language** | Python 3.12 (LTS)
+| **Data Access** | pystac-client, fsspec (Streaming)
+| **Processing** | Rasterio (Tiled IO), NumPy (Band Math)
+| **Orchestration** | Docker, Docker-Compose
+|===
+
+== 5. Deployment
+
+[source,bash]
+----
+# Build and launch the processing chain
+docker-compose up --build
+----
+
+== 6. Contact
+Initiated by **Clément FRANCOIS** as a proactive demonstration.
