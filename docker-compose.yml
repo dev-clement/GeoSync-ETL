@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  geosync-app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    container_name: geosync_engine
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    networks:
+      - geosync-network
+
+networks:
+  geosync-network:
+    driver: bridge
