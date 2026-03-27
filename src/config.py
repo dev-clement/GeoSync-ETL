@@ -23,8 +23,16 @@ class Settings(BaseSettings):
 
     app_name: str = "GeoSync-ETL"
     stac_api_url: str
-    title_size: int = 256
-    model_config: SettingsConfigDict = SettingsConfigDict(env_file='.env')
+    tile_size: int = 256
+
+    # INTERNAL CONFIURATION
+    # Note: Do not add a type hint here or Pydantic will treat it as a data field
+    # extra='ignore' allows your .env to have extra variables without crashing the app
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        env_file_encoding='utf-8',
+        extra='ignore'
+    )
 
     def __init__(self, **data):
         """
@@ -41,4 +49,5 @@ class Settings(BaseSettings):
         super().__init__(**data)
 
 
+# Instantiate the settings singleton
 settings = Settings()

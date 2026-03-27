@@ -2,7 +2,7 @@
 numpy>=1.26.0
 pandas>=2.2.0
 
-# Geospatial Stack (The "Must-Haves" for CLS)
+# Geospatial Stack
 rasterio>=1.3.9
 rioxarray>=0.15.0
 pystac-client>=0.7.0
@@ -17,3 +17,7 @@ pydantic-settings>=2.1.0
 # Tools
 loguru>=0.7.2
 aiohttp>=3.9.0
+
+# Testing (Development Dependencies)
+pytest>=8.0.0
+httpx>=0.27.0
