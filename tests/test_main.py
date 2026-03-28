@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from src.main import app
 
@@ -21,6 +22,60 @@ def test_health_check_operational():
         assert data['status'] == 'operational'
         assert data['engine_status'] == 'connected'
         assert 'url' in data['connected_to'] or data['connected_to'] is not None
+
+def test_search_satellite_data_success():
+    """
+    Test of the /search endpoint inside of the
+    'try' part of it
+    """
+    with TestClient(app) as client:
+        # 1. We creates a mock in order to simulate the STAC's items
+        mock_item_1 = MagicMock()
+        mock_item_2 = MagicMock()
+        mock_item_1.id = 'S2A_MSIL2A_20240101'
+        mock_item_2.id = 'S2A_MSIL2A_20240102'
+
+        # 2. We are mocking the search_image from the intestor already present in app
+        # Note: Ingestore has been stored in app.state.ingestor thanks to the lifespan
+        client.app.state.ingestor.search_image = MagicMock(return_value=[mock_item_1, mock_item_2])
+
+        # 3. Testing payload
+        payload = {
+            'bbox': [1.2, 43.5, 1.3, 3.6],
+            'collections': ['sentinel-2-12a'],
+            'datetime': "2024-01-01/2024-01-31",
+            'limit': 2
+        }
+
+        response = client.post('/search', json=payload)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data['count'] == 2
+        assert 'S2A_MSIL2A_20240101' in data['features']
+        assert 'S2A_MSIL2A_20240102' in data['features']
+
+def test_search_satellite_data_error_500():
+    """
+    Test for the 'except' block of the /search endpoint
+    We simulate a break from the STAC catalog (exception)
+    """
+    with TestClient(app) as client:
+        # 1. We are forcing the ingestor to raise an exception
+        client.app.state.ingestor.search_image = MagicMock(
+            side_effect=Exception("Connection Timeout")
+        )
+
+        payload = {
+            'bbox': [1.2, 43.5, 1.3, 43.6],
+            'datetime': '2024-01-01/2024-01-31'
+        }
+
+        response = client.post('/search', json=payload)
+
+        # Verify the error code and the message
+        assert response.status_code == 500
+        assert response.json()['detail'] == 'Error: Cannot communicate with the catalog'
 
 def test_lifespan_test_cleanup():
     """
