@@ -1,14 +1,14 @@
 services:
-  geosync-app:
+  backend-ingestor:
     build:
-      context: .
-      dockerfile: ./docker/Dockerfile
+      context: ./backend-ingestor
+      dockerfile: Dockerfile
     container_name: geosync_engine
     volumes:
-      - .:/app
-      - ./data:/app/data
+      - ./backend-ingestor:/app
+      - ./backend-ingestor/data:/app/data
     env_file:
-      - .env
+      - ./backend-ingestor/.env
     ports:
       - "8000:8000"
     restart: unless-stopped
